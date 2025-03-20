@@ -33,8 +33,9 @@ jobs:
         FORK_BRANCH="main"
         FORK_OWNER=${{ env.fork_owner }}
         FORK_REPO=${{ env.fork_repo }}
-        git fetch https://github.com/$FORK_OWNER/$FORK_REPO $FORK_BRANCH
-        CHANGES=$(git diff $BASE_BRANCH...FETCH_HEAD --name-only)
+        git remote add fork https://github.com/$FORK_OWNER/$FORK_REPO.git
+        git fetch fork $FORK_BRANCH
+        CHANGES=$(git diff $BASE_BRANCH...fork/$FORK_BRANCH --name-only)
         echo "changes=$CHANGES" >> $GITHUB_ENV
 
     - name: Generate document using AI
