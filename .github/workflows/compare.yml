@@ -6,7 +6,7 @@ on:
       fork_url:
         description: 'Fork URL to compare with'
         required: true
-        default: 'https://github.com/planetoftheorg/react-in-action-from-setup-to-deployment-5972102'
+        default: ''
 
 jobs:
   compare-fork:
