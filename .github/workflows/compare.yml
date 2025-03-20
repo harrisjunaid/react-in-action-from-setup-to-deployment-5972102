@@ -6,7 +6,7 @@ on:
       fork_url:
         description: 'Fork URL to compare with'
         required: true
-        default: ''
+        default: 'https://github.com/planetoftheorg/react-in-action-from-setup-to-deployment-5972102'
 
 jobs:
   compare-fork:
@@ -33,7 +33,8 @@ jobs:
         FORK_BRANCH="main"
         FORK_OWNER=${{ env.fork_owner }}
         FORK_REPO=${{ env.fork_repo }}
-        CHANGES=$(git diff $BASE_BRANCH...$FORK_OWNER/$FORK_REPO:$FORK_BRANCH --name-only)
+        git fetch https://github.com/$FORK_OWNER/$FORK_REPO $FORK_BRANCH
+        CHANGES=$(git diff $BASE_BRANCH...FETCH_HEAD --name-only)
         echo "changes=$CHANGES" >> $GITHUB_ENV
 
     - name: Generate document using AI
