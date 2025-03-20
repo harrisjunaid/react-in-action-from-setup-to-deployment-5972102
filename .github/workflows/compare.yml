@@ -35,8 +35,14 @@ jobs:
         FORK_REPO=${{ env.fork_repo }}
         git remote add fork https://github.com/$FORK_OWNER/$FORK_REPO.git
         git fetch fork $FORK_BRANCH
-        CHANGES=$(git diff $BASE_BRANCH...fork/$FORK_BRANCH --name-only)
-        echo "changes=$CHANGES" >> $GITHUB_ENV
+        # Check if there is a merge base
+        if git merge-base --is-ancestor $BASE_BRANCH fork/$FORK_BRANCH; then
+          CHANGES=$(git diff $BASE_BRANCH...fork/$FORK_BRANCH --name-only)
+          echo "changes=$CHANGES" >> $GITHUB_ENV
+        else
+          echo "No common ancestor found between $BASE_BRANCH and fork/$FORK_BRANCH. Exiting..."
+          exit 1
+        fi
 
     - name: Generate document using AI
       id: generate_document
@@ -45,11 +51,11 @@ jobs:
       run: |
         CHANGES=${{ env.changes }}
         PROMPT=$(cat <<-END
-          Pretend the changes haven't been done and write a document that asks someone to make the changes as part of a capstone document. I don't need the actual changes, just the document describing a project that might contain the changes.
+          Pretend the changes haven't been done and write a document that asks someone to make the changes as part of a capstone document. I don't need the actual changes, just the document describing what changes to make.
 
           I don't need the code. Just a summary of what sort of changes the student might make. Keep it short and make the explanations simple for a beginner audience.
 
-          At the end, add a short list of other suggestions, but don't show any code. Assume that the student is a beginner, Junior Developer, so make the changes simple and something a beginner might implement.
+          At the end, add a short list of other suggestions, but don't show any code. Assume that the student is a beginner, Junior Developer, so make the changes simple and something a beginner might do.
           END
         )
         RESPONSE=$(curl -X POST "https://api.openai.com/v1/engines/davinci-codex/completions" \
