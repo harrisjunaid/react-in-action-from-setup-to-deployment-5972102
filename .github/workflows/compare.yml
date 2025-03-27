@@ -16,26 +16,22 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-    - name: Extract fork information
-      id: extract_fork_info
+    - name: Get comparison URL
+      id: get_comparison_url
       run: |
-        echo "Fork URL: ${{ github.event.inputs.fork_url }}"
-        # Extract owner and repo from the fork URL
-        FORK_OWNER=$(echo "${{ github.event.inputs.fork_url }}" | awk -F '/' '{print $4}')
-        FORK_REPO=$(echo "${{ github.event.inputs.fork_url }}" | awk -F '/' '{print $5}')
-        echo "fork_owner=$FORK_OWNER" >> $GITHUB_ENV
-        echo "fork_repo=$FORK_REPO" >> $GITHUB_ENV
-
-    - name: Fetch changes between main branch and fork
-      id: fetch_changes
-      run: |
+        FORK_URL="${{ github.event.inputs.fork_url }}"
         BASE_BRANCH="main"
         FORK_BRANCH="main"
-        FORK_OWNER=${{ env.fork_owner }}
-        FORK_REPO=${{ env.fork_repo }}
-        git remote add fork https://github.com/$FORK_OWNER/$FORK_REPO.git
-        git fetch fork $FORK_BRANCH
-        CHANGES=$(git diff origin/$BASE_BRANCH...fork/$FORK_BRANCH --name-only)
+        FORK_OWNER=$(echo "$FORK_URL" | awk -F '/' '{print $4}')
+        FORK_REPO=$(echo "$FORK_URL" | awk -F '/' '{print $5}')
+        COMPARISON_URL="https://github.com/LinkedInLearning/react-in-action-from-setup-to-deployment-5972102/compare/$BASE_BRANCH...$FORK_OWNER:$FORK_REPO:$FORK_BRANCH"
+        echo "comparison_url=$COMPARISON_URL" >> $GITHUB_ENV
+
+    - name: Get changes from comparison URL
+      id: get_changes
+      run: |
+        COMPARISON_URL=${{ env.comparison_url }}
+        CHANGES=$(curl -s $COMPARISON_URL | grep -Po '(?<=<div class="file-info">)[^<]*')
         echo "changes=$CHANGES" >> $GITHUB_ENV
 
     - name: Generate document using AI
@@ -46,12 +42,9 @@ jobs:
         CHANGES=${{ env.changes }}
         PROMPT=$(cat <<-END
           Pretend the changes haven't been done and write a document that asks someone to make the changes as part of a capstone document. I don't need the actual changes, just the document describing what needs to be done.
-
           Here are the changes:
           $CHANGES
-
           I don't need the code. Just a summary of what sort of changes the student might make. Keep it short and make the explanations simple for a beginner audience.
-
           At the end, add a short list of other suggestions, but don't show any code. Assume that the student is a beginner, Junior Developer, so make the changes simple and something a beginner might do.
           END
         )
