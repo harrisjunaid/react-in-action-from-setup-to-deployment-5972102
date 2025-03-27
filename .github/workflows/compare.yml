@@ -35,14 +35,8 @@ jobs:
         FORK_REPO=${{ env.fork_repo }}
         git remote add fork https://github.com/$FORK_OWNER/$FORK_REPO.git
         git fetch fork $FORK_BRANCH
-        # Check if there is a merge base
-        if git merge-base --is-ancestor $BASE_BRANCH fork/$FORK_BRANCH; then
-          CHANGES=$(git diff $BASE_BRANCH...fork/$FORK_BRANCH --name-only)
-          echo "changes=$CHANGES" >> $GITHUB_ENV
-        else
-          echo "No common ancestor found between $BASE_BRANCH and fork/$FORK_BRANCH. Exiting..."
-          exit 1
-        fi
+        CHANGES=$(git diff origin/$BASE_BRANCH...fork/$FORK_BRANCH --name-only)
+        echo "changes=$CHANGES" >> $GITHUB_ENV
 
     - name: Generate document using AI
       id: generate_document
@@ -51,7 +45,10 @@ jobs:
       run: |
         CHANGES=${{ env.changes }}
         PROMPT=$(cat <<-END
-          Pretend the changes haven't been done and write a document that asks someone to make the changes as part of a capstone document. I don't need the actual changes, just the document describing what changes to make.
+          Pretend the changes haven't been done and write a document that asks someone to make the changes as part of a capstone document. I don't need the actual changes, just the document describing what needs to be done.
+
+          Here are the changes:
+          $CHANGES
 
           I don't need the code. Just a summary of what sort of changes the student might make. Keep it short and make the explanations simple for a beginner audience.
 
